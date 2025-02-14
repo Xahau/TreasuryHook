@@ -12,7 +12,7 @@
     }
 
 #define AMOUNT_LIMIT 6215967485771284480LLU // 10M XAH
-#define MIN_LEDGER_LIMIT 50     // 324000 ledger is 15 days. Changed to 50 ledger for testing
+#define MIN_LEDGER_LIMIT 21600     // 1 day
 #define MAX_LEDGER_LIMIT 7884000 // 365 days
 
 #define DEFAULT_REWARD_DELAY 6199553087261802496ULL // 2600000
@@ -97,7 +97,7 @@ int64_t cbak(uint32_t reserve)
 {
     uint32_t prev_release = 0;
     if (state(SVAR(prev_release), "PREV", 4) != 4)
-        DONE("Success");
+        DONE("Success.");
 
     meta_slot(1);
     slot_subfield(1, sfTransactionResult, 1);
@@ -107,7 +107,7 @@ int64_t cbak(uint32_t reserve)
         state_set(SVAR(prev_release), "LAST", 4);
 
     state_set(0, 0, "PREV", 4);
-    DONE("Success");
+    DONE("Success.");
     return 0;
 }
 
@@ -138,7 +138,7 @@ int64_t hook(uint32_t reserved)
         NOPE("Treasury: Misconfigured. Ledger limit 'L' not set as Hook parameter.");
 
     if (ledger_param < MIN_LEDGER_LIMIT)
-        NOPE("Treasury: Ledger limit must be greater than 324,000(15 days).");
+        NOPE("Treasury: Ledger limit must be greater than 21,600(1 day).");
 
     if (ledger_param > MAX_LEDGER_LIMIT)
         NOPE("Treasury: Ledger limit must be less than 7,884,000(365 days).");
@@ -178,7 +178,7 @@ int64_t hook(uint32_t reserved)
         {
             if (emit(SBUF(emithash), SBUF(ctxn)) != 32)
                 NOPE("Treasury: Reward Claim Setup Failed.");
-            DONE("Treasury: Reward Claim Setup Passed.");
+            DONE("Treasury: Reward Claim Setup Success.");
         }
 
         slot_subfield(2, sfRewardTime, 4);
@@ -221,14 +221,21 @@ int64_t hook(uint32_t reserved)
         DONE("Treasury: Claimed successfully.");
     }
 
-    uint64_t amount_xfl;
-    if (otxn_param(SVAR(amount_xfl), "W", 1) != 8)
-        NOPE("Treasury: Specify The Amount To Withdraw.");
+    uint8_t account[20];
+    otxn_field(SBUF(account), sfAccount);
 
-    if (float_compare(amount_xfl, amt_param, COMPARE_GREATER) == 1)
-        NOPE("Treasury: Outgoing transaction exceeds the amount limit set by you.");
+    uint64_t drops = float_int(amt_param, 6, 1);
+    if(BUFFER_EQUAL_20(account, dest_param)) {
+        uint64_t amount_xfl;
+        if (otxn_param(SVAR(amount_xfl), "W", 1) != 8)
+            NOPE("Treasury: Specify The Amount To Withdraw.");
 
-    uint64_t drops = float_int(amount_xfl, 6, 1);
+        if (float_compare(amount_xfl, amt_param, COMPARE_GREATER) == 1)
+            NOPE("Treasury: Outgoing transaction exceeds the amount limit set by you.");  
+
+        drops = float_int(amount_xfl, 6, 1);          
+    }
+
     BE_DROPS(drops);
     *((uint64_t*)(AMOUNT_OUT)) = drops;
 

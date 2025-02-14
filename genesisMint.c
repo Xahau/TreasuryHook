@@ -34,7 +34,7 @@ int64_t hook(uint32_t reserved)
 {
     hook_account(ACC_OUT, 20);
     if (hook_param(DEST_OUT, 20, "D", 1) != 20)
-        rollback(SBUF("Genesis Mint: Destination Account not set as Hook parameter"), 1);
+        rollback(SBUF("Genesis Mint: Destination Account not set as Hook parameter."), 1);
 
     otxn_slot(1);
     slot_subfield(1, sfGenesisMints, 1);
