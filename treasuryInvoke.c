@@ -221,14 +221,21 @@ int64_t hook(uint32_t reserved)
         DONE("Treasury: Claimed successfully.");
     }
 
-    uint64_t amount_xfl;
-    if (otxn_param(SVAR(amount_xfl), "W", 1) != 8)
-        NOPE("Treasury: Specify The Amount To Withdraw.");
+    uint8_t account[20];
+    otxn_field(SBUF(account), sfAccount);
 
-    if (float_compare(amount_xfl, amt_param, COMPARE_GREATER) == 1)
-        NOPE("Treasury: Outgoing transaction exceeds the amount limit set by you.");
+    uint64_t drops = float_int(amt_param, 6, 1);
+    if(BUFFER_EQUAL_20(account, dest_param)) {
+        uint64_t amount_xfl;
+        if (otxn_param(SVAR(amount_xfl), "W", 1) != 8)
+            NOPE("Treasury: Specify The Amount To Withdraw.");
 
-    uint64_t drops = float_int(amount_xfl, 6, 1);
+        if (float_compare(amount_xfl, amt_param, COMPARE_GREATER) == 1)
+            NOPE("Treasury: Outgoing transaction exceeds the amount limit set by you.");  
+
+        drops = float_int(amount_xfl, 6, 1);          
+    }
+
     BE_DROPS(drops);
     *((uint64_t*)(AMOUNT_OUT)) = drops;
 
